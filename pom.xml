@@ -2,9 +2,13 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.acme</groupId>
-  <artifactId>code-with-quarkus</artifactId>
+  <groupId>dev.nye.conduit.quarkus</groupId>
+  <artifactId>conduit</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>login</module>
+  </modules>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
@@ -39,12 +43,29 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jsonb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-jsonb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-client</artifactId>
+      <version>4.7.5.Final</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
