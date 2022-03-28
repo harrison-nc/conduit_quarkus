@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.json.Json;
@@ -19,6 +20,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Stream;
 
 @QuarkusTest
 public class LoginResourceTest {
@@ -65,10 +67,10 @@ public class LoginResourceTest {
         });
   }
 
-  @DisplayName("Login should return username")
-  @MethodSource("getLogins")
+  @DisplayName("Login should return user properties")
+  @MethodSource("getLoginProperties")
   @ParameterizedTest
-  void login1(JsonObject login) {
+  void login2(String property, JsonObject login) {
     var requestBody = Entity.json(login);
     var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
 
@@ -79,24 +81,8 @@ public class LoginResourceTest {
           var responseBody = response.readEntity(JsonObject.class);
           var user = responseBody.getJsonObject("user");
 
-          Assertions.assertNotNull(user.get("username"));
+          Assertions.assertNotNull(user.get(property), property);
         });
-  }
-
-  @MethodSource("getLogins")
-  @ParameterizedTest
-  void login2(JsonObject login) {
-      var requestBody = Entity.json(login);
-      var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
-
-      Assertions.assertEquals(200, response.getStatus(), "status");
-      Assertions.assertTrue(response.hasEntity(), "has entity");
-      Assertions.assertAll(() -> {
-          var responseBody = response.readEntity(JsonObject.class);
-          var user = responseBody.getJsonObject("user");
-
-          Assertions.assertNotNull(user.get("bio"));
-      });
   }
 
   public static List<JsonObject> getLogins() {
@@ -110,5 +96,12 @@ public class LoginResourceTest {
                     .build())
             .build();
     return List.of(login);
+  }
+
+  public static Stream<Arguments> getLoginProperties() {
+    return getLogins().stream()
+        .flatMap(
+            login ->
+                Stream.of("username", "bio").map(property -> Arguments.arguments(property, login)));
   }
 }
