@@ -38,3 +38,10 @@ nb-configuration.xml
 
 # Local environment
 .env
+
+# Dot file
+.*
+!.dockerignore
+!.gitignore
+!.editorconfig
+!.mvn
