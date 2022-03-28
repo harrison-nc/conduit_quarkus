@@ -5,6 +5,7 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
+@NamedQuery(name = "findLoginByEmail", query = "SELECT l FROM LoginEntity as l WHERE l.email = ?1")
 @Table(name = "logins")
 @Entity
 public class LoginEntity {

@@ -2,11 +2,11 @@ package dev.nye.conduit.login;
 
 public interface LoginMapper {
 
-    default Login toDomain(LoginEntity login) {
-        return new Login(login.getEmail(), login.getPassword());
-    }
+  default Login<LoginResponse> toDomain(LoginEntity login) {
+    return new Login<>(new LoginResponse(login.getEmail(), ""));
+  }
 
-    default LoginEntity toEntity(Login login) {
-        return new LoginEntity(login.email(), login.password());
-    }
+  default LoginEntity toEntity(LoginRequest user) {
+    return new LoginEntity(user.email(), user.password());
+  }
 }

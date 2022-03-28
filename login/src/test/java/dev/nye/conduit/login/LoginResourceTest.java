@@ -6,7 +6,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -16,6 +18,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
+import java.util.List;
 
 @QuarkusTest
 public class LoginResourceTest {
@@ -38,28 +41,57 @@ public class LoginResourceTest {
     webClient.close();
   }
 
-  @Test
-  void login0() {
-    var loginEmail = "john@mail.com";
+  @DisplayName("Login should return user email")
+  @MethodSource("getLogins")
+  @ParameterizedTest
+  void login0(JsonObject login) {
+    var requestBody = Entity.json(login);
+    var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "has entity");
+    Assertions.assertAll(
+        () -> {
+          JsonObject responseBody = response.readEntity(JsonObject.class);
+
+          Assertions.assertTrue(responseBody.containsKey("user"), "contains user");
+          Assertions.assertAll(
+              () -> {
+                JsonObject user = responseBody.getJsonObject("user");
+                String userEmail = login.getJsonObject("user").getString("email");
+
+                Assertions.assertEquals(userEmail, user.getString("email"), "email");
+              });
+        });
+  }
+
+  @DisplayName("Login should return username")
+  @MethodSource("getLogins")
+  @ParameterizedTest
+  void login1(JsonObject login) {
+    var requestBody = Entity.json(login);
+    var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "has entity");
+    Assertions.assertAll(
+        () -> {
+          var responseBody = response.readEntity(JsonObject.class);
+          var user = responseBody.getJsonObject("user");
+          Assertions.assertNotNull(user.get("username"));
+        });
+  }
+
+  public static List<JsonObject> getLogins() {
     var login =
         Json.createObjectBuilder()
             .add(
                 "user",
                 Json.createObjectBuilder()
-                    .add("email", loginEmail)
+                    .add("email", "john@mail.com")
                     .add("password", "john_password")
                     .build())
             .build();
-
-    var requestEntity = Entity.json(login);
-
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestEntity);
-
-    Assertions.assertEquals(200, response.getStatus(), "status");
-    Assertions.assertTrue(response.hasEntity(), "has entity");
-
-    var responseEntity = response.readEntity(JsonObject.class);
-
-    Assertions.assertEquals(loginEmail, responseEntity.getString("email"), "email");
+    return List.of(login);
   }
 }

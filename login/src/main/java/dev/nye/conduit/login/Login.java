@@ -2,12 +2,12 @@ package dev.nye.conduit.login;
 
 import javax.json.bind.annotation.JsonbCreator;
 import javax.json.bind.annotation.JsonbProperty;
-import javax.validation.constraints.NotBlank;
 
-public record Login(@NotBlank String email, @NotBlank String password) {
-  @JsonbCreator
-  public Login(@JsonbProperty("email") String email, @JsonbProperty("password") String password) {
-    this.email = email;
-    this.password = password;
-  }
+public record Login<T extends LoginUser>(T user) {
+    public static Login<LoginResponse> NOT_FOUND = new Login<>(null);
+
+    @JsonbCreator
+    public Login(@JsonbProperty("user") T user) {
+        this.user = user;
+    }
 }

@@ -1,12 +1,8 @@
 package dev.nye.conduit.login;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.Map;
 
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -16,8 +12,11 @@ public class LoginResource {
   @Inject LoginService service;
 
   @POST
-  public Map<String, Object> login(Map<String, Login> body) {
-    Login login = body.get("user");
-    return service.login(login);
+  public Login<LoginResponse> login(Login<LoginRequest> body) {
+    var login = service.login(body.user());
+
+    if (login == Login.NOT_FOUND) throw new WebApplicationException(401);
+
+    return login;
   }
 }
