@@ -78,8 +78,25 @@ public class LoginResourceTest {
         () -> {
           var responseBody = response.readEntity(JsonObject.class);
           var user = responseBody.getJsonObject("user");
+
           Assertions.assertNotNull(user.get("username"));
         });
+  }
+
+  @MethodSource("getLogins")
+  @ParameterizedTest
+  void login2(JsonObject login) {
+      var requestBody = Entity.json(login);
+      var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
+
+      Assertions.assertEquals(200, response.getStatus(), "status");
+      Assertions.assertTrue(response.hasEntity(), "has entity");
+      Assertions.assertAll(() -> {
+          var responseBody = response.readEntity(JsonObject.class);
+          var user = responseBody.getJsonObject("user");
+
+          Assertions.assertNotNull(user.get("bio"));
+      });
   }
 
   public static List<JsonObject> getLogins() {
