@@ -10,10 +10,6 @@ public interface LoginMapper {
     return new Success(new User(login.getEmail()));
   }
 
-  default LoginEntity toEntity(LoginRequest req) {
-    return new LoginEntity(req.user().email(), req.user().password());
-  }
-
   default Map<String, Object> toMap(LoginResponse res) {
     return res instanceof Success suc && ((Object) suc.user()) instanceof LoginResponse.User u
         ? Map.of(

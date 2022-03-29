@@ -2,6 +2,7 @@ package dev.nye.conduit.login.impl;
 
 import dev.nye.conduit.login.*;
 import dev.nye.conduit.login.LoginResponse.Failure;
+import dev.nye.conduit.login.LoginResponse.Success;
 import io.smallrye.common.constraint.NotNull;
 import io.smallrye.jwt.build.Jwt;
 import java.util.Map;
@@ -29,20 +30,17 @@ public class LoginServiceImpl implements LoginService {
   }
 
   String getToken(LoginResponse res) {
-    Map<String, Object> properties = mapper.toMap(res);
     Map<String, Object> claims =
-        properties.entrySet().stream()
+        mapper.toMap(res).entrySet().stream()
             .filter(e -> !"token".equals(e.getKey()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    String token = Jwt.claims(claims).sign();
-    System.out.println(token);
-    return token;
+    return Jwt.claims(claims).sign();
   }
 
   LoginResponse generateToken(LoginResponse res) {
-    return res instanceof LoginResponse.Success s
+    return res instanceof Success s
             && ((Object) s.user()) instanceof LoginResponse.User u
-        ? new LoginResponse.Success(
+        ? new Success(
             new LoginResponse.User(u.email(), u.username(), u.bio(), u.image(), getToken(res)))
         : res;
   }
