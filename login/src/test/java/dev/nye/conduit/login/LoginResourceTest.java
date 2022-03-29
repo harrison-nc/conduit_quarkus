@@ -5,18 +5,19 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.net.URI;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.persistence.EntityManager;
+import javax.transaction.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,6 +28,10 @@ public class LoginResourceTest {
   @TestHTTPEndpoint(LoginResource.class)
   @TestHTTPResource
   URI uri;
+
+  @Inject EntityManager entityManager;
+
+  @Inject UserTransaction userTransaction;
 
   WebTarget webTarget;
   Client webClient;
@@ -40,6 +45,25 @@ public class LoginResourceTest {
   @AfterEach
   void tearDown() {
     webClient.close();
+  }
+
+  private void withTransaction(Consumer<UserTransaction> block) {
+    try {
+      userTransaction.begin();
+      block.accept(userTransaction);
+      userTransaction.commit();
+    } catch (HeuristicRollbackException
+        | SystemException
+        | HeuristicMixedException
+        | NotSupportedException
+        | RollbackException e) {
+      try {
+        userTransaction.rollback();
+      } catch (SystemException ex) {
+        throw new AssertionError(ex);
+      }
+      throw new AssertionError(e);
+    }
   }
 
   @DisplayName("Login should return user email")
@@ -82,6 +106,41 @@ public class LoginResourceTest {
 
           Assertions.assertNotNull(user.get(property), property);
         });
+  }
+
+  @DisplayName("Login should return 401 if user doest not exists")
+  @Test
+  void login_reject() {
+
+    JsonObject login =
+        Json.createObjectBuilder()
+            .add(
+                "user",
+                Json.createObjectBuilder()
+                    .add("email", "bob@mail.com")
+                    .add("password", "bob_password")
+                    .build())
+            .build();
+
+    withTransaction(
+        tx -> {
+          entityManager
+              .createNamedQuery("deleteLoginByEmail")
+              .setParameter(1, login.getJsonObject("user").getString("email"))
+              .executeUpdate();
+
+          List<LoginEntity> entities =
+              entityManager
+                  .createNamedQuery("findLoginByEmail", LoginEntity.class)
+                  .setParameter(1, login.getJsonObject("user").getString("email"))
+                  .getResultList();
+
+          Assertions.assertEquals(0, entities.size(), "entities");
+        });
+
+    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(login));
+
+    Assertions.assertEquals(401, response.getStatus(), "status");
   }
 
   public static List<JsonObject> getLogins() {
