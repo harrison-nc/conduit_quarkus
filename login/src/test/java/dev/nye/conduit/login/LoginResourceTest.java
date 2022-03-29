@@ -102,7 +102,7 @@ public class LoginResourceTest {
     return getLogins().stream()
         .flatMap(
             login ->
-                Stream.of("username", "bio", "image")
+                Stream.of("username", "bio", "image", "token")
                     .map(property -> Arguments.arguments(property, login)));
   }
 }
