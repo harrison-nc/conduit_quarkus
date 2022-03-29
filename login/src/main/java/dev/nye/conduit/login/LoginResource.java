@@ -1,5 +1,7 @@
 package dev.nye.conduit.login;
 
+import dev.nye.conduit.login.LoginResponse.Failure;
+
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -12,10 +14,10 @@ public class LoginResource {
   @Inject LoginService service;
 
   @POST
-  public Login<LoginResponse> login(Login<LoginRequest> body) {
-    var login = service.login(body.user());
+  public LoginResponse login(LoginRequest body) {
+    var login = service.login(body);
 
-    if (login == Login.NOT_FOUND) throw new WebApplicationException(401);
+    if (login instanceof Failure) throw new WebApplicationException(401);
 
     return login;
   }

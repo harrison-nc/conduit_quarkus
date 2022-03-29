@@ -1,6 +1,7 @@
 package dev.nye.conduit.login.impl;
 
 import dev.nye.conduit.login.*;
+import dev.nye.conduit.login.LoginResponse.Failure;
 import io.smallrye.common.constraint.NotNull;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -16,17 +17,17 @@ public class LoginServiceImpl implements LoginService {
 
   @Inject LoginMapper mapper;
 
-  Optional<LoginEntity> findByEmail(LoginRequest user) {
+  Optional<LoginEntity> findByEmail(LoginRequest req) {
     var results =
         entityManager
             .createNamedQuery("findLoginByEmail", LoginEntity.class)
-            .setParameter(1, user.email())
+            .setParameter(1, req.user().email())
             .getResultList();
     return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
   }
 
   @Override
-  public Login<LoginResponse> login(@NotNull @Valid LoginRequest user) {
-    return findByEmail(user).map(mapper::toDomain).orElse(Login.NOT_FOUND);
+  public LoginResponse login(@NotNull @Valid LoginRequest user) {
+    return findByEmail(user).map(mapper::toDomain).orElse(new Failure());
   }
 }
