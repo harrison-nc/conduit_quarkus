@@ -5,10 +5,10 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
-@NamedQuery(name = "findLoginByEmail", query = "SELECT l FROM LoginEntity as l WHERE l.email = ?1")
-@NamedQuery(name = "deleteLoginByEmail", query = "DELETE LoginEntity as l WHERE l.email = ?1")
+@NamedQuery(name = "findLoginByEmail", query = "SELECT l FROM Login as l WHERE l.email = ?1")
+@NamedQuery(name = "deleteLoginByEmail", query = "DELETE Login as l WHERE l.email = ?1")
 @Table(name = "logins")
-@Entity
+@Entity(name = "Login")
 public class LoginEntity {
 
   private Long id;
