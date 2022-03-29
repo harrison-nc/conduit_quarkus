@@ -2,10 +2,10 @@ package dev.nye.conduit.login;
 
 public sealed interface LoginResponse {
 
-    record User(String email, String username, String bio) {
+    record User(String email, String username, String bio, String image) {
 
         public User(String email) {
-            this(email, "", "");
+            this(email, "", "", "");
         }
     }
 
