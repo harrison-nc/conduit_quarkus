@@ -38,8 +38,7 @@ public class LoginServiceImpl implements LoginService {
   }
 
   LoginResponse generateToken(LoginResponse res) {
-    return res instanceof Success s
-            && ((Object) s.user()) instanceof LoginResponse.User u
+    return res instanceof Success s && ((Object) s.user()) instanceof LoginResponse.User u
         ? new Success(
             new LoginResponse.User(u.email(), u.username(), u.bio(), u.image(), getToken(res)))
         : res;

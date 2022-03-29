@@ -115,6 +115,7 @@
                         <goals>
                             <goal>format</goal>
                         </goals>
+                        <phase>process-sources</phase>
                     </execution>
                 </executions>
             </plugin>
