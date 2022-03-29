@@ -10,8 +10,9 @@ public record LoginRequest(@NotNull @JsonbProperty("user") User user) {
   @JsonbCreator
   public LoginRequest {}
 
-  public record User(@NotBlank @JsonbProperty("email") String email,
-                     @NotBlank @JsonbProperty("password") String password) {
+  public record User(
+      @NotBlank @JsonbProperty("email") String email,
+      @NotBlank @JsonbProperty("password") String password) {
 
     @JsonbCreator
     public User {}
