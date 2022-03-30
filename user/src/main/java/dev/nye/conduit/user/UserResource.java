@@ -16,6 +16,7 @@ public class UserResource {
 
   @POST
   public RegistrationResponse register(Registration reg) {
-    return new RegistrationResponse(new User("", reg.user().email(), "", "", ""));
+    Registration.User user = reg.user();
+    return new RegistrationResponse(new User(user.username(), user.email(), "", "", ""));
   }
 }
