@@ -119,7 +119,7 @@ public class UserResourceTest {
     return registrations()
         .flatMap(
             reg ->
-                Stream.of("email", "username", "bio")
+                Stream.of("email", "username", "bio", "image")
                     .map(property -> Arguments.arguments(property, reg)));
   }
 }
