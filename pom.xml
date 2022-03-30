@@ -9,6 +9,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>login</module>
+        <module>user</module>
     </modules>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
