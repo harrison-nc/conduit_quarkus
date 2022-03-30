@@ -97,6 +97,40 @@ public class UserResourceTest {
         });
   }
 
+  @DisplayName("register should return an empty user token property")
+  @Test
+  void register3() {
+    var reg =
+        Json.createObjectBuilder()
+            .add(
+                "user",
+                Json.createObjectBuilder()
+                    .add("email", "test@mail.com")
+                    .add("username", "test")
+                    .add("password", "test_password")
+                    .build())
+            .build();
+
+    var response = post(reg);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "entity");
+    Assertions.assertAll(
+        () -> {
+          var entity = response.readEntity(JsonObject.class);
+
+          Assertions.assertNotNull(entity, "entity");
+          Assertions.assertNotNull(entity.getJsonObject("user"), "user");
+          Assertions.assertAll(
+              () -> {
+                var user = entity.getJsonObject("user");
+                String token = user.getString("token");
+
+                Assertions.assertTrue(token == null || token.isBlank());
+              });
+        });
+  }
+
   private static JsonObject toJsonObject(Registration reg) {
     return Json.createObjectBuilder()
         .add(
@@ -119,7 +153,7 @@ public class UserResourceTest {
     return registrations()
         .flatMap(
             reg ->
-                Stream.of("email", "username", "bio", "image")
+                Stream.of("email", "username", "bio", "image", "token")
                     .map(property -> Arguments.arguments(property, reg)));
   }
 }
