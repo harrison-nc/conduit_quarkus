@@ -12,6 +12,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -38,11 +40,17 @@ public class UserResourceTest {
     webClient.close();
   }
 
+
+  private Response post(JsonObject reg) {
+    return webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
+  }
+
+
   @DisplayName("register should return 200 status code")
   @MethodSource("registrations")
   @ParameterizedTest
   void register(JsonObject reg) {
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
+    var response = post(reg);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
   }
@@ -51,7 +59,7 @@ public class UserResourceTest {
   @MethodSource("registrations")
   @ParameterizedTest
   void register1(JsonObject reg) {
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
+    var response = post(reg);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "entity");
@@ -67,7 +75,7 @@ public class UserResourceTest {
   @MethodSource("registrationsWithProperty")
   @ParameterizedTest
   void register2(String property, JsonObject reg) {
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
+    var response = post(reg);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "entity");
