@@ -87,8 +87,12 @@ public class UserResourceTest {
                 var user = entity.getJsonObject("user");
 
                 Assertions.assertNotNull(user.get(property), property);
-                Assertions.assertEquals(
-                    reg.getJsonObject("user").get(property), user.get(property), property);
+                Assertions.assertAll(
+                    () -> {
+                      if (reg.containsKey(property))
+                        Assertions.assertEquals(
+                            reg.getJsonObject("user").get(property), user.get(property), property);
+                    });
               });
         });
   }
@@ -113,6 +117,9 @@ public class UserResourceTest {
 
   public static Stream<Arguments> registrationsWithProperty() {
     return registrations()
-        .flatMap(reg -> Stream.of("email", "username").map(property -> Arguments.arguments(property, reg)));
+        .flatMap(
+            reg ->
+                Stream.of("email", "username", "bio")
+                    .map(property -> Arguments.arguments(property, reg)));
   }
 }
