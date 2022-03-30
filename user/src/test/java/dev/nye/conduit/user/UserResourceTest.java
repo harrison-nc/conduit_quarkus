@@ -49,7 +49,7 @@ public class UserResourceTest {
   @DisplayName("register should return a json object with a user property")
   @MethodSource("registrations")
   @ParameterizedTest
-  void register1(JsonObject reg, TestReporter reporter) {
+  void register1(JsonObject reg) {
     var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
 
     Assertions.assertEquals(200, response.getStatus(), "status");
