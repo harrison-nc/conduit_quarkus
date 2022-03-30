@@ -68,10 +68,35 @@ public class UserResourceTest {
         });
   }
 
-  @DisplayName("register should return the following properties")
-  @MethodSource("registrationsWithProperty")
+  @DisplayName("register should return a matching value for required properties")
+  @MethodSource("registrationsWithRequiredProperties")
   @ParameterizedTest
   void register2(String property, JsonObject reg) {
+    var response = post(reg);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "entity");
+    Assertions.assertAll(
+        () -> {
+          var entity = response.readEntity(JsonObject.class);
+
+          Assertions.assertNotNull(entity, "entity");
+          Assertions.assertNotNull(entity.getJsonObject("user"), "user");
+          Assertions.assertAll(
+              () -> {
+                var user = entity.getJsonObject("user");
+
+                Assertions.assertNotNull(user.get(property), property);
+                Assertions.assertEquals(
+                    reg.getJsonObject("user").get(property), user.get(property), property);
+              });
+        });
+  }
+
+  @DisplayName("register may return optional properties")
+  @MethodSource("registrationsWithOptionalProperties")
+  @ParameterizedTest
+  void register2_5(String property, JsonObject reg) {
     var response = post(reg);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
@@ -145,15 +170,22 @@ public class UserResourceTest {
 
   public static Stream<JsonObject> registrations() {
     var alice =
-        new Registration(new Registration.User("alice", "alice@mail.com", "alice_password"));
+        new Registration(new Registration.User("test", "test@mail.com", "test_password"));
     return Stream.of(toJsonObject(alice));
   }
 
-  public static Stream<Arguments> registrationsWithProperty() {
+  public static Stream<Arguments> registrationsWithRequiredProperties() {
     return registrations()
         .flatMap(
             reg ->
-                Stream.of("email", "username", "bio", "image", "token")
+                Stream.of("email", "username").map(property -> Arguments.arguments(property, reg)));
+  }
+
+  public static Stream<Arguments> registrationsWithOptionalProperties() {
+    return registrations()
+        .flatMap(
+            reg ->
+                Stream.of("bio", "image", "token")
                     .map(property -> Arguments.arguments(property, reg)));
   }
 }
