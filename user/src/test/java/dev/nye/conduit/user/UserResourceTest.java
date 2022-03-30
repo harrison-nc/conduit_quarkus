@@ -14,6 +14,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
@@ -62,6 +63,29 @@ public class UserResourceTest {
         });
   }
 
+  @DisplayName("register should return the following properties")
+  @MethodSource("registrationsWithProperty")
+  @ParameterizedTest
+  void register2(String property, JsonObject reg) {
+    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(reg));
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "entity");
+    Assertions.assertAll(
+        () -> {
+          var entity = response.readEntity(JsonObject.class);
+
+          Assertions.assertNotNull(entity, "entity");
+          Assertions.assertNotNull(entity.getJsonObject("user"), "user");
+          Assertions.assertAll(
+              () -> {
+                var user = entity.getJsonObject("user");
+
+                Assertions.assertNotNull(user.get(property), property);
+              });
+        });
+  }
+
   private static JsonObject toJsonObject(Registration reg) {
     return Json.createObjectBuilder()
         .add(
@@ -78,5 +102,10 @@ public class UserResourceTest {
     var alice =
         new Registration(new Registration.User("alice", "alice@mail.com", "alice_password"));
     return Stream.of(toJsonObject(alice));
+  }
+
+  public static Stream<Arguments> registrationsWithProperty() {
+    return registrations()
+        .flatMap(reg -> Stream.of("email").map(property -> Arguments.arguments(property, reg)));
   }
 }
