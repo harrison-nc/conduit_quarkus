@@ -1,12 +1,17 @@
 package dev.nye.conduit.user;
 
+import dev.nye.conduit.login.LoginEntity;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.net.URI;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.persistence.EntityManager;
+import javax.transaction.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -28,6 +33,28 @@ public class UserResourceTest {
   @TestHTTPResource
   URI uri;
 
+  @Inject EntityManager entityManager;
+
+  @Inject UserTransaction userTransaction;
+
+  private void withTransaction(Consumer<UserTransaction> block) {
+    try {
+      userTransaction.begin();
+      block.accept(userTransaction);
+      userTransaction.commit();
+    } catch (HeuristicRollbackException
+        | SystemException
+        | HeuristicMixedException
+        | NotSupportedException
+        | RollbackException e) {
+      try {
+        userTransaction.rollback();
+      } catch (SystemException ex) {
+        throw new AssertionError(ex);
+      }
+    }
+  }
+
   @BeforeEach
   void setup() {
     webClient = ClientBuilder.newClient();
@@ -37,6 +64,16 @@ public class UserResourceTest {
   @AfterEach
   void tearDown() {
     webClient.close();
+  }
+
+  @BeforeEach
+  @AfterEach
+  void clearDb() {
+    withTransaction(
+        tx -> {
+          entityManager.createQuery("DELETE FROM User").executeUpdate();
+          entityManager.createQuery("DELETE FROM Login").executeUpdate();
+        });
   }
 
   private Response post(JsonObject reg) {
@@ -156,6 +193,35 @@ public class UserResourceTest {
         });
   }
 
+  @DisplayName("register should persist user to database")
+  @MethodSource("registrations")
+  @ParameterizedTest
+  void register5(JsonObject reg) {
+    String email = reg.getJsonObject("user").getString("email");
+
+    var response = post(reg);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertDoesNotThrow(
+        () ->
+            withTransaction(
+                tx -> {
+                  var loginsWithEmail =
+                      entityManager
+                          .createQuery(
+                              "SELECT l FROM Login l WHERE l.email = :email", LoginEntity.class)
+                          .setParameter("email", email)
+                          .getSingleResult();
+
+                  entityManager
+                      .createQuery(
+                          "SELECT u FROM User u WHERE u.login.id = :loginId", UserEntity.class)
+                      .setParameter("loginId", loginsWithEmail.getId())
+                      .getSingleResult();
+                }),
+        "user");
+  }
+
   private static JsonObject toJsonObject(Registration reg) {
     return Json.createObjectBuilder()
         .add(
@@ -169,8 +235,7 @@ public class UserResourceTest {
   }
 
   public static Stream<JsonObject> registrations() {
-    var alice =
-        new Registration(new Registration.User("test", "test@mail.com", "test_password"));
+    var alice = new Registration(new Registration.User("test", "test@mail.com", "test_password"));
     return Stream.of(toJsonObject(alice));
   }
 

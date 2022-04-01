@@ -11,4 +11,11 @@ public interface UserMapper {
     return new UserEntity(
         req.user().username(), new LoginEntity(req.user().email(), req.user().password()));
   }
+
+  default RegistrationResponse toDomain(UserEntity entity) {
+    Objects.requireNonNull(entity);
+    Objects.requireNonNull(entity.getLogin());
+    return new RegistrationResponse(
+        new User(entity.getUsername(), entity.getLogin().getEmail(), "", "", ""));
+  }
 }
