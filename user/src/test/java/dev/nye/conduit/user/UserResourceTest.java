@@ -160,19 +160,9 @@ public class UserResourceTest {
   }
 
   @DisplayName("register should return an empty user token property")
-  @Test
-  void register3() {
-    var reg =
-        Json.createObjectBuilder()
-            .add(
-                "user",
-                Json.createObjectBuilder()
-                    .add("email", "test@mail.com")
-                    .add("username", "test")
-                    .add("password", "test_password")
-                    .build())
-            .build();
-
+  @MethodSource("registrations")
+  @ParameterizedTest
+  void register3(JsonObject reg) {
     var response = post(reg);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
