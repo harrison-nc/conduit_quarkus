@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>req</module>
-        <module>user</module>
+        <module>registration</module>
     </modules>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
