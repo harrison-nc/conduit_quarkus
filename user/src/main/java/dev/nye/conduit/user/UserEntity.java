@@ -1,6 +1,5 @@
 package dev.nye.conduit.user;
 
-import dev.nye.conduit.login.LoginEntity;
 import java.util.Objects;
 import javax.persistence.*;
 
@@ -10,15 +9,19 @@ public class UserEntity {
 
   private Long id;
   private String username;
-  private LoginEntity login;
+  private Long loginId;
 
   public UserEntity() {
     // JPA
   }
 
-  public UserEntity(String username, LoginEntity login) {
+  public UserEntity(String username) {
+    this(username, 0L);
+  }
+
+  public UserEntity(String username, Long loginId) {
     this.username = username;
-    this.login = login;
+    this.loginId = loginId;
   }
 
   @SequenceGenerator(
@@ -37,17 +40,13 @@ public class UserEntity {
     this.id = id;
   }
 
-  @OneToOne(
-      cascade = CascadeType.ALL,
-      fetch = FetchType.LAZY,
-      optional = false,
-      orphanRemoval = true)
-  public LoginEntity getLogin() {
-    return login;
+  @Column(name = "login_id")
+  public Long getLoginId() {
+    return loginId;
   }
 
-  public void setLogin(LoginEntity login) {
-    this.login = login;
+  public void setLoginId(Long loginId) {
+    this.loginId = loginId;
   }
 
   @Column(name = "username")

@@ -1,6 +1,5 @@
 package dev.nye.conduit.user;
 
-import dev.nye.conduit.login.LoginEntity;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -72,7 +71,7 @@ public class UserResourceTest {
     withTransaction(
         tx -> {
           entityManager.createQuery("DELETE FROM User").executeUpdate();
-          entityManager.createQuery("DELETE FROM Login").executeUpdate();
+          entityManager.createNativeQuery("DELETE FROM logins").executeUpdate();
         });
   }
 
@@ -196,17 +195,16 @@ public class UserResourceTest {
         () ->
             withTransaction(
                 tx -> {
-                  var loginsWithEmail =
+                  var loginId =
                       entityManager
-                          .createQuery(
-                              "SELECT l FROM Login l WHERE l.email = :email", LoginEntity.class)
+                          .createNativeQuery("SELECT l.id FROM logins l WHERE l.email = :email")
                           .setParameter("email", email)
                           .getSingleResult();
 
                   entityManager
                       .createQuery(
-                          "SELECT u FROM User u WHERE u.login.id = :loginId", UserEntity.class)
-                      .setParameter("loginId", loginsWithEmail.getId())
+                          "SELECT u FROM User u WHERE u.loginId = :loginId", UserEntity.class)
+                      .setParameter("loginId", ((Number) loginId).longValue())
                       .getSingleResult();
                 }),
         "user");

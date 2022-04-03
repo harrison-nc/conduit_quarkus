@@ -3,7 +3,6 @@ package dev.nye.conduit.login.impl;
 import dev.nye.conduit.login.*;
 import dev.nye.conduit.login.LoginResponse.Failure;
 import dev.nye.conduit.login.LoginResponse.Success;
-import io.smallrye.common.constraint.NotNull;
 import io.smallrye.jwt.build.Jwt;
 import java.util.Map;
 import java.util.Optional;
@@ -11,7 +10,10 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.WebApplicationException;
 
 @ApplicationScoped
 public class LoginServiceImpl implements LoginService {
@@ -44,8 +46,20 @@ public class LoginServiceImpl implements LoginService {
         : res;
   }
 
+  @Transactional(Transactional.TxType.SUPPORTS)
   @Override
   public LoginResponse login(@NotNull @Valid LoginRequest user) {
     return findByEmail(user).map(mapper::toDomain).map(this::generateToken).orElse(new Failure());
+  }
+
+  @Transactional(Transactional.TxType.REQUIRES_NEW)
+  @Override
+  public long create(LoginRequest req) {
+    if (findByEmail(req).isPresent()) throw new WebApplicationException(400);
+
+    var entity = mapper.toEntity(req);
+    entityManager.persist(entity);
+
+    return entity.getId();
   }
 }
