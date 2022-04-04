@@ -12,8 +12,7 @@ import javax.ws.rs.core.MediaType;
 @Path("/api/users")
 public class RegistrationResource {
 
-  @Inject
-  RegistrationService service;
+  @Inject RegistrationService service;
 
   @POST
   public RegistrationResponse register(RegistrationRequest reg) {

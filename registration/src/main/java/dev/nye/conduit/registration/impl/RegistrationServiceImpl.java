@@ -14,15 +14,14 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 @ApplicationScoped
 public class RegistrationServiceImpl implements RegistrationService {
 
-  @Inject
-  RegistrationMapper mapper;
+  @Inject RegistrationMapper mapper;
 
   @Inject EntityManager entityManager;
 
   @RestClient @Inject LoginService loginService;
 
   private RegistrationResponse toDomain(
-          RegistrationEntity entity, Function<RegistrationEntity, RegistrationResponse> fn) {
+      RegistrationEntity entity, Function<RegistrationEntity, RegistrationResponse> fn) {
     Objects.requireNonNull(entity);
     Objects.requireNonNull(fn);
     return fn.apply(entity);

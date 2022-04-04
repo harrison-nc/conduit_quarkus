@@ -203,7 +203,8 @@ public class RegistrationResourceTest {
 
                   entityManager
                       .createQuery(
-                          "SELECT u FROM User u WHERE u.loginId = :loginId", RegistrationEntity.class)
+                          "SELECT u FROM User u WHERE u.loginId = :loginId",
+                          RegistrationEntity.class)
                       .setParameter("loginId", ((Number) loginId).longValue())
                       .getSingleResult();
                 }),
@@ -223,7 +224,9 @@ public class RegistrationResourceTest {
   }
 
   public static Stream<JsonObject> registrations() {
-    var alice = new RegistrationRequest(new RegistrationRequest.User("test", "test@mail.com", "test_password"));
+    var alice =
+        new RegistrationRequest(
+            new RegistrationRequest.User("test", "test@mail.com", "test_password"));
     return Stream.of(toJsonObject(alice));
   }
 
