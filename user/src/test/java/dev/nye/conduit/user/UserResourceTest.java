@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import javax.json.JsonObject;
 import javax.persistence.EntityManager;
 import javax.transaction.*;
 import javax.ws.rs.client.Client;
@@ -33,8 +34,6 @@ public class UserResourceTest {
   @Inject UserTransaction userTransaction;
 
   @Inject JwtGenerator jwtGenerator;
-
-  @Inject UserMapper mapper;
 
   @Inject
   @ConfigProperty(name = "quarkus.hibernate-orm.database.default-schema")
@@ -134,7 +133,7 @@ public class UserResourceTest {
   @DisplayName("getUser should return 401 if user does not provide an authorization token")
   @MethodSource("users")
   @ParameterizedTest
-  void getUser0(User user) {
+  void getUser0(User ignoredParam) {
     Response response = webTarget.request(MediaType.APPLICATION_JSON).get();
 
     Assertions.assertEquals(401, response.getStatus(), "status");
@@ -148,5 +147,33 @@ public class UserResourceTest {
     Response response = get(user);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
+  }
+
+  private void checkJsonResponse(Response response, User user) {
+    JsonObject entity = response.readEntity(JsonObject.class);
+    JsonObject userJson = entity.getJsonObject("user");
+
+    String email = userJson.getString("email");
+    String username = userJson.getString("username");
+    String bio = userJson.getString("bio");
+    String image = userJson.getString("image");
+
+    Assertions.assertEquals(user.getEmail(), email, "email");
+    Assertions.assertEquals(user.getUsername(), username, "username");
+    Assertions.assertEquals(user.getBio(), bio, "bio");
+    Assertions.assertEquals(user.getImage(), image, "image");
+  }
+
+  @DisplayName("getUser should return user Json")
+  @MethodSource("users")
+  @ParameterizedTest
+  void getUser2(User user) {
+    persistToDatabase(user);
+    Response response = get(user);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+    Assertions.assertTrue(response.hasEntity(), "entity");
+
+    checkJsonResponse(response, user);
   }
 }

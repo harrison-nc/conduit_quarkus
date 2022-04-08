@@ -11,8 +11,6 @@ public class JwtGeneratorImpl implements JwtGenerator {
 
     @Override
     public String generateJwt(Map<String, Object> m) {
-        String token = Jwt.claims(m).sign();
-        System.out.println(token);
-        return token;
+        return Jwt.claims(m).sign();
     }
 }
