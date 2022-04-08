@@ -122,7 +122,15 @@
                 <version>2.16</version>
                 <executions>
                     <execution>
+                        <id>sources</id>
                         <phase>process-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>test-sources</id>
+                        <phase>process-test-sources</phase>
                         <goals>
                             <goal>format</goal>
                         </goals>

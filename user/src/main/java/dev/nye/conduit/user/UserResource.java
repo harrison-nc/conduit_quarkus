@@ -1,12 +1,10 @@
 package dev.nye.conduit.user;
 
 import java.util.Map;
-import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/api/user")

@@ -4,5 +4,5 @@ import java.util.Map;
 
 public interface JwtGenerator {
 
-    String generateJwt(Map<String, Object> m);
+  String generateJwt(Map<String, Object> m);
 }

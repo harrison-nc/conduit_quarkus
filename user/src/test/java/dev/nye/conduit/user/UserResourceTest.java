@@ -17,7 +17,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -79,7 +78,9 @@ public class UserResourceTest {
     withTransaction(
         tx -> {
           entityManager.createQuery("DELETE FROM User").executeUpdate();
-          entityManager.createNativeQuery("DELETE FROM " + databaseSchema + ".logins").executeUpdate();
+          entityManager
+              .createNativeQuery("DELETE FROM " + databaseSchema + ".logins")
+              .executeUpdate();
         });
   }
 
@@ -103,15 +104,20 @@ public class UserResourceTest {
   }
 
   private void persistToDatabase(User user) {
-    withTransaction(tx -> {
-      entityManager.createNativeQuery("""
+    withTransaction(
+        tx -> {
+          entityManager
+              .createNativeQuery(
+                  """
               INSERT INTO conduit.logins (email, password_hash)
               VALUES (:email, 'test_password')
               """)
               .setParameter("email", user.getEmail())
               .executeUpdate();
 
-      entityManager.createNativeQuery("""
+          entityManager
+              .createNativeQuery(
+                  """
               INSERT INTO conduit.users (email, username, bio, image, login_id)
               VALUES (:email, :username, :bio, :image, (SELECT l.id FROM conduit.logins as l WHERE l.email = :email))
               """)
@@ -120,14 +126,15 @@ public class UserResourceTest {
               .setParameter("bio", user.getBio())
               .setParameter("image", user.getImage())
               .executeUpdate();
-    });
+        });
   }
 
   private Response get(User user) {
     String token = jwtGenerator.generateJwt(toMap(user));
-    return webTarget.request(MediaType.APPLICATION_JSON)
-            .header("Authorization", "Bearer " + token)
-            .get();
+    return webTarget
+        .request(MediaType.APPLICATION_JSON)
+        .header("Authorization", "Bearer " + token)
+        .get();
   }
 
   @DisplayName("getUser should return 401 if user does not provide an authorization token")
@@ -182,7 +189,7 @@ public class UserResourceTest {
   @ParameterizedTest
   void getUser3(User user) {
     Response response = get(user);
-    
+
     Assertions.assertEquals(404, response.getStatus(), "status");
   }
 }

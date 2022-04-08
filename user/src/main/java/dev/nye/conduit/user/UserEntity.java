@@ -4,9 +4,7 @@ import java.util.Objects;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 
-@NamedQuery(
-    name = "findByEmail",
-    query = "SELECT u FROM User u WHERE u.email = :email")
+@NamedQuery(name = "findByEmail", query = "SELECT u FROM User u WHERE u.email = :email")
 @Table(name = "users")
 @Entity(name = "User")
 public class UserEntity {
