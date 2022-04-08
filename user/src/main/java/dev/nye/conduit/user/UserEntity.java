@@ -6,16 +6,7 @@ import javax.validation.constraints.Email;
 
 @NamedQuery(
     name = "findByEmail",
-    query =
-        """
-    SELECT
-        u.email,
-        u.username,
-        u.bio,
-        u.image
-    FROM User u
-    WHERE u.email = :email
-    """)
+    query = "SELECT u FROM User u WHERE u.email = :email")
 @Table(name = "users")
 @Entity(name = "User")
 public class UserEntity {

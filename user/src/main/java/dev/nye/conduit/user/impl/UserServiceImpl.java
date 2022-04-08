@@ -20,7 +20,9 @@ public class UserServiceImpl implements UserService {
   @Override
   public Optional<User> getUser(String email) {
     Objects.requireNonNull(email);
-    var foundUsers = entityManager.createNamedQuery("findByEmail", UserEntity.class).getResultList();
+    var foundUsers = entityManager.createNamedQuery("findByEmail", UserEntity.class)
+            .setParameter("email", email)
+            .getResultList();
     return foundUsers.stream().map(mapper::toDomain).findFirst();
   }
 }

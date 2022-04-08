@@ -1,6 +1,7 @@
 package dev.nye.conduit.user;
 
 import java.util.Map;
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

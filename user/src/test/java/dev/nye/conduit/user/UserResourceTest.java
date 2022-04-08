@@ -1,14 +1,14 @@
 package dev.nye.conduit.user;
 
+import dev.nye.conduit.common.JwtGenerator;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.net.URI;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObject;
 import javax.persistence.EntityManager;
 import javax.transaction.*;
 import javax.ws.rs.client.Client;
@@ -31,6 +31,10 @@ public class UserResourceTest {
   @Inject EntityManager entityManager;
 
   @Inject UserTransaction userTransaction;
+
+  @Inject JwtGenerator jwtGenerator;
+
+  @Inject UserMapper mapper;
 
   @Inject
   @ConfigProperty(name = "quarkus.hibernate-orm.database.default-schema")
@@ -95,13 +99,36 @@ public class UserResourceTest {
     webClient.close();
   }
 
-  private JsonObject toJson(User user) {
-    return Json.createObjectBuilder()
-        .add("email", user.getEmail())
-        .add("username", user.getUsername())
-        .add("bio", user.getBio())
-        .add("image", user.getImage())
-        .build();
+  private Map<String, Object> toMap(User user) {
+    return Map.of("upn", user.getEmail());
+  }
+
+  private void persistToDatabase(User user) {
+    withTransaction(tx -> {
+      entityManager.createNativeQuery("""
+              INSERT INTO conduit.logins (email, password_hash)
+              VALUES (:email, 'test_password')
+              """)
+              .setParameter("email", user.getEmail())
+              .executeUpdate();
+
+      entityManager.createNativeQuery("""
+              INSERT INTO conduit.users (email, username, bio, image, login_id)
+              VALUES (:email, :username, :bio, :image, (SELECT l.id FROM conduit.logins as l WHERE l.email = :email))
+              """)
+              .setParameter("email", user.getEmail())
+              .setParameter("username", user.getUsername())
+              .setParameter("bio", user.getBio())
+              .setParameter("image", user.getImage())
+              .executeUpdate();
+    });
+  }
+
+  private Response get(User user) {
+    String token = jwtGenerator.generateJwt(toMap(user));
+    return webTarget.request(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer " + token)
+            .get();
   }
 
   @DisplayName("getUser should return 401 if user does not provide an authorization token")
@@ -111,5 +138,15 @@ public class UserResourceTest {
     Response response = webTarget.request(MediaType.APPLICATION_JSON).get();
 
     Assertions.assertEquals(401, response.getStatus(), "status");
+  }
+
+  @DisplayName("getUser should return 200 status code if user exists")
+  @MethodSource("users")
+  @ParameterizedTest
+  void getUser1(User user) {
+    persistToDatabase(user);
+    Response response = get(user);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
   }
 }

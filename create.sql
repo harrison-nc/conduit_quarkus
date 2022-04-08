@@ -24,12 +24,15 @@ create sequence if not exists conduit.user_id_seq as bigint
 create table if not exists conduit.users (
     "id" bigint not null default nextval('user_id_seq'),
     login_id bigint not null,
+    email varchar(255) not null,
     username varchar(255) not null,
+    bio varchar(255),
+    image varchar(255),
     primary key("id")
 );
 
 alter sequence conduit.user_id_seq owned by conduit.users."id";
-
+alter table conduit.users add constraint user_username_unique unique(email);
 alter table conduit.users add constraint user_username_unique unique(username);
 alter table conduit.users add constraint user_login_id_unique unique(login_id);
 alter table conduit.users add foreign key(login_id) references conduit.logins("id");
