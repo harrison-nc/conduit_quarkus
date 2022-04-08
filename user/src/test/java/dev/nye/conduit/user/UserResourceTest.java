@@ -176,4 +176,13 @@ public class UserResourceTest {
 
     checkJsonResponse(response, user);
   }
+
+  @DisplayName("getUser should return 404 if user does not exists")
+  @MethodSource("users")
+  @ParameterizedTest
+  void getUser3(User user) {
+    Response response = get(user);
+    
+    Assertions.assertEquals(404, response.getStatus(), "status");
+  }
 }
