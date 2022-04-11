@@ -14,7 +14,6 @@ public class UserEntity {
   private String username;
   private String bio;
   private String image;
-  private Long loginId;
 
   public UserEntity() {
     // JPA
@@ -60,15 +59,6 @@ public class UserEntity {
 
   public void setUsername(String username) {
     this.username = username;
-  }
-
-  @Column(name = "login_id")
-  public Long getLoginId() {
-    return loginId;
-  }
-
-  public void setLoginId(Long loginId) {
-    this.loginId = loginId;
   }
 
   @Column(name = "bio")
