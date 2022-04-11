@@ -1,35 +1,28 @@
-package dev.nye.conduit.login;
+package dev.nye.conduit.login.user;
 
 import java.util.Objects;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
-@NamedQuery(name = "findLoginByEmail", query = "SELECT l FROM Login as l WHERE l.email = ?1")
-@NamedQuery(name = "deleteLoginByEmail", query = "DELETE Login as l WHERE l.email = ?1")
-@Table(name = "logins")
-@Entity(name = "Login")
-public class LoginEntity {
+@NamedQuery(name = "findByEmail", query = "SELECT u FROM User u WHERE u.email = :email")
+@Table(name = "users")
+@Entity(name = "User")
+public class UserEntity {
 
   private Long id;
   private String email;
   private String password;
 
-  public LoginEntity() {
+  public UserEntity() {
     // JPA
   }
 
-  public LoginEntity(String email, String password) {
+  public UserEntity(String email, String password) {
     this.email = email;
     this.password = password;
   }
 
-  @SequenceGenerator(
-      name = "loginSeq",
-      sequenceName = "login_id_seq",
-      allocationSize = 1,
-      initialValue = 1)
-  @GeneratedValue(generator = "loginSeq")
   @Column(name = "id")
   @Id
   public Long getId() {
@@ -63,7 +56,7 @@ public class LoginEntity {
 
   @Override
   public boolean equals(Object o) {
-    return this.id != null && o instanceof LoginEntity that && id.equals(that.id);
+    return this.id != null && o instanceof UserEntity that && id.equals(that.id);
   }
 
   @Override

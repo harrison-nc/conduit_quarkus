@@ -1,5 +1,6 @@
 package dev.nye.conduit.login;
 
+import dev.nye.conduit.login.user.User;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -8,7 +9,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonObject;
 import javax.persistence.EntityManager;
 import javax.transaction.*;
@@ -16,7 +16,8 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,6 +37,66 @@ public class LoginResourceTest {
   WebTarget webTarget;
   Client webClient;
 
+  public static List<UserWithLogin> getLogins() {
+    return List.of(new UserWithLogin(
+            new User(
+                    "test@mail.com",
+                    "test",
+                    "A test user",
+                    "test.jpeg"),
+            new Login(
+                    "test@mail.com",
+                    "test_password")));
+  }
+
+  public static Stream<Arguments> getLoginProperties() {
+    return getLogins().stream()
+            .flatMap(
+                    login ->
+                            Stream.of("username", "bio", "image", "token")
+                                    .map(property -> Arguments.arguments(property, login)));
+  }
+
+  private void withTransaction(Consumer<UserTransaction> block) {
+    try {
+      userTransaction.begin();
+      block.accept(userTransaction);
+      userTransaction.commit();
+    } catch (HeuristicRollbackException
+            | SystemException
+            | HeuristicMixedException
+            | NotSupportedException
+            | RollbackException e) {
+      try {
+        userTransaction.rollback();
+      } catch (SystemException ex) {
+        throw new AssertionError(ex);
+      }
+      throw new AssertionError(e);
+    }
+  }
+
+  private void createUser(UserWithLogin ul) {
+    withTransaction(tx -> entityManager.createNativeQuery("""
+            INSERT INTO users(email, username, bio, image, password_hash)
+            VALUES(:email, :username, :bio, :image, :passwordHash)
+            """)
+            .setParameter("email", ul.user().getEmail())
+            .setParameter("username", ul.user().getUsername())
+            .setParameter("bio", ul.user().getBio())
+            .setParameter("image", ul.user().getImage())
+            .setParameter("password", ul.login().password())
+            .executeUpdate());
+  }
+
+  private Response post(Login login) {
+    return webTarget.request("application/json").post(Entity.json(login));
+  }
+
+  private void cleanDatabase() {
+    entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
+  }
+
   @BeforeEach
   void setup() {
     webClient = ClientBuilder.newClient();
@@ -47,31 +108,22 @@ public class LoginResourceTest {
     webClient.close();
   }
 
-  private void withTransaction(Consumer<UserTransaction> block) {
-    try {
-      userTransaction.begin();
-      block.accept(userTransaction);
-      userTransaction.commit();
-    } catch (HeuristicRollbackException
-        | SystemException
-        | HeuristicMixedException
-        | NotSupportedException
-        | RollbackException e) {
-      try {
-        userTransaction.rollback();
-      } catch (SystemException ex) {
-        throw new AssertionError(ex);
-      }
-      throw new AssertionError(e);
-    }
+  @BeforeEach
+  void setupDatabase() {
+    cleanDatabase();
+  }
+
+  @AfterEach
+  void tearDownDatabase() {
+    cleanDatabase();
   }
 
   @DisplayName("Login should return user email")
   @MethodSource("getLogins")
   @ParameterizedTest
-  void login0(JsonObject login) {
-    var requestBody = Entity.json(login);
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
+  void login0(UserWithLogin ul) {
+    createUser(ul);
+    Response response = post(ul.login());
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "has entity");
@@ -83,7 +135,7 @@ public class LoginResourceTest {
           Assertions.assertAll(
               () -> {
                 JsonObject user = responseBody.getJsonObject("user");
-                String userEmail = login.getJsonObject("user").getString("email");
+                String userEmail = ul.login().email();
 
                 Assertions.assertEquals(userEmail, user.getString("email"), "email");
               });
@@ -93,9 +145,9 @@ public class LoginResourceTest {
   @DisplayName("Login should return user properties")
   @MethodSource("getLoginProperties")
   @ParameterizedTest
-  void login2(String property, JsonObject login) {
-    var requestBody = Entity.json(login);
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(requestBody);
+  void login2(String property, UserWithLogin ul) {
+    createUser(ul);
+    Response response = post(ul.login());
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "has entity");
@@ -109,58 +161,13 @@ public class LoginResourceTest {
   }
 
   @DisplayName("Login should return 401 if user doest not exists")
-  @Test
-  void login_reject() {
-
-    JsonObject login =
-        Json.createObjectBuilder()
-            .add(
-                "user",
-                Json.createObjectBuilder()
-                    .add("email", "bob@mail.com")
-                    .add("password", "bob_password")
-                    .build())
-            .build();
-
-    withTransaction(
-        tx -> {
-          entityManager
-              .createNamedQuery("deleteLoginByEmail")
-              .setParameter(1, login.getJsonObject("user").getString("email"))
-              .executeUpdate();
-
-          List<LoginEntity> entities =
-              entityManager
-                  .createNamedQuery("findLoginByEmail", LoginEntity.class)
-                  .setParameter(1, login.getJsonObject("user").getString("email"))
-                  .getResultList();
-
-          Assertions.assertEquals(0, entities.size(), "entities");
-        });
-
-    var response = webTarget.request(MediaType.APPLICATION_JSON).post(Entity.json(login));
+  @MethodSource("getLogins")
+  @ParameterizedTest
+  void login_reject(UserWithLogin ul) {
+    var response = post(ul.login());
 
     Assertions.assertEquals(401, response.getStatus(), "status");
   }
 
-  public static List<JsonObject> getLogins() {
-    var login =
-        Json.createObjectBuilder()
-            .add(
-                "user",
-                Json.createObjectBuilder()
-                    .add("email", "john@mail.com")
-                    .add("password", "john_password")
-                    .build())
-            .build();
-    return List.of(login);
-  }
-
-  public static Stream<Arguments> getLoginProperties() {
-    return getLogins().stream()
-        .flatMap(
-            login ->
-                Stream.of("username", "bio", "image", "token")
-                    .map(property -> Arguments.arguments(property, login)));
-  }
+  private record UserWithLogin(User user, Login login) {}
 }

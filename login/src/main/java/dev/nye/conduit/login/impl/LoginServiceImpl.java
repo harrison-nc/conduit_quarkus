@@ -1,12 +1,14 @@
 package dev.nye.conduit.login.impl;
 
 import dev.nye.conduit.login.*;
-import dev.nye.conduit.login.LoginResponse.Failure;
-import dev.nye.conduit.login.LoginResponse.Success;
+import dev.nye.conduit.login.user.UserService;
+import dev.nye.conduit.login.user.User;
+import dev.nye.conduit.login.user.UserEntity;
 import io.smallrye.jwt.build.Jwt;
-import java.util.Map;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -18,48 +20,53 @@ import javax.ws.rs.WebApplicationException;
 @ApplicationScoped
 public class LoginServiceImpl implements LoginService {
 
-  @Inject EntityManager entityManager;
+  EntityManager entityManager;
+  LoginMapper mapper;
+  UserService userService;
 
-  @Inject LoginMapper mapper;
-
-  Optional<LoginEntity> findByEmail(LoginRequest req) {
-    var results =
-        entityManager
-            .createNamedQuery("findLoginByEmail", LoginEntity.class)
-            .setParameter(1, req.user().email())
-            .getResultList();
-    return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+  @Inject
+  public LoginServiceImpl(EntityManager entityManager, LoginMapper mapper, @RestClient UserService userService) {
+    this.entityManager = entityManager;
+    this.mapper = mapper;
+    this.userService = userService;
   }
 
-  String getToken(LoginResponse res) {
-    Map<String, Object> claims =
-        mapper.toMap(res).entrySet().stream()
-            .filter(e -> !"token".equals(e.getKey()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    return Jwt.claims(claims).sign();
+  private Optional<UserEntity> findByEmail(Login login) {
+    return entityManager.createNamedQuery("findByEmail", UserEntity.class)
+            .setParameter("email", login.email())
+            .getResultList()
+            .stream()
+            .findFirst();
   }
 
-  LoginResponse generateToken(LoginResponse res) {
-    return res instanceof Success s && ((Object) s.user()) instanceof LoginResponse.User u
-        ? new Success(
-            new LoginResponse.User(u.email(), u.username(), u.bio(), u.image(), getToken(res)))
-        : res;
+  String getToken(User user) {
+    return Jwt.claims()
+            .upn(user.getEmail())
+            .claim("username", user.getUsername())
+            .sign();
+  }
+
+  User generateToken(User user) {
+    Objects.requireNonNull(user);
+    return user.withToken(getToken(user));
+  }
+
+  User requestUser(User user) {
+    try {
+      String token = "Bearer " + user.getToken();
+      return userService.getUser(token).user();
+    } catch (WebApplicationException e) {
+      throw new WebApplicationException(e, 500);
+    }
   }
 
   @Transactional(Transactional.TxType.SUPPORTS)
   @Override
-  public LoginResponse login(@NotNull @Valid LoginRequest user) {
-    return findByEmail(user).map(mapper::toDomain).map(this::generateToken).orElse(new Failure());
-  }
-
-  @Transactional(Transactional.TxType.REQUIRES_NEW)
-  @Override
-  public long create(LoginRequest req) {
-    if (findByEmail(req).isPresent()) throw new WebApplicationException(400);
-
-    var entity = mapper.toEntity(req);
-    entityManager.persist(entity);
-
-    return entity.getId();
+  public Optional<User> login(@NotNull @Valid LoginRequest request) {
+    return findByEmail(request.user())
+            .map(mapper::toDomain)
+            .map(this::generateToken)
+            .map(this::requestUser)
+            .map(this::generateToken);
   }
 }
