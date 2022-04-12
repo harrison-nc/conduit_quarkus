@@ -17,7 +17,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
-
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -38,23 +37,18 @@ public class LoginResourceTest {
   Client webClient;
 
   public static List<UserWithLogin> getLogins() {
-    return List.of(new UserWithLogin(
-            new User(
-                    "test@mail.com",
-                    "test",
-                    "A test user",
-                    "test.jpeg"),
-            new Login(
-                    "test@mail.com",
-                    "test_password")));
+    return List.of(
+        new UserWithLogin(
+            new User("test@mail.com", "test", "A test user", "test.jpeg"),
+            new Login("test@mail.com", "test_password")));
   }
 
   public static Stream<Arguments> getLoginProperties() {
     return getLogins().stream()
-            .flatMap(
-                    login ->
-                            Stream.of("username", "bio", "image", "token")
-                                    .map(property -> Arguments.arguments(property, login)));
+        .flatMap(
+            login ->
+                Stream.of("username", "bio", "image", "token")
+                    .map(property -> Arguments.arguments(property, login)));
   }
 
   private void withTransaction(Consumer<UserTransaction> block) {
@@ -63,10 +57,10 @@ public class LoginResourceTest {
       block.accept(userTransaction);
       userTransaction.commit();
     } catch (HeuristicRollbackException
-            | SystemException
-            | HeuristicMixedException
-            | NotSupportedException
-            | RollbackException e) {
+        | SystemException
+        | HeuristicMixedException
+        | NotSupportedException
+        | RollbackException e) {
       try {
         userTransaction.rollback();
       } catch (SystemException ex) {
@@ -77,16 +71,20 @@ public class LoginResourceTest {
   }
 
   private void createUser(UserWithLogin ul) {
-    withTransaction(tx -> entityManager.createNativeQuery("""
+    withTransaction(
+        tx ->
+            entityManager
+                .createNativeQuery(
+                    """
             INSERT INTO users(email, username, bio, image, password_hash)
             VALUES(:email, :username, :bio, :image, :passwordHash)
             """)
-            .setParameter("email", ul.user().getEmail())
-            .setParameter("username", ul.user().getUsername())
-            .setParameter("bio", ul.user().getBio())
-            .setParameter("image", ul.user().getImage())
-            .setParameter("password", ul.login().password())
-            .executeUpdate());
+                .setParameter("email", ul.user().getEmail())
+                .setParameter("username", ul.user().getUsername())
+                .setParameter("bio", ul.user().getBio())
+                .setParameter("image", ul.user().getImage())
+                .setParameter("password", ul.login().password())
+                .executeUpdate());
   }
 
   private Response post(Login login) {

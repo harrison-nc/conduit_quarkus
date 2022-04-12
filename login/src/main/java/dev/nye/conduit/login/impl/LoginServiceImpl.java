@@ -1,12 +1,11 @@
 package dev.nye.conduit.login.impl;
 
+import dev.nye.conduit.common.JwtGenerator;
 import dev.nye.conduit.login.*;
-import dev.nye.conduit.login.user.UserService;
 import dev.nye.conduit.login.user.User;
 import dev.nye.conduit.login.user.UserEntity;
-import io.smallrye.jwt.build.Jwt;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-
+import dev.nye.conduit.login.user.UserService;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
@@ -16,39 +15,41 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 @ApplicationScoped
 public class LoginServiceImpl implements LoginService {
 
-  EntityManager entityManager;
-  LoginMapper mapper;
-  UserService userService;
+  private final JwtGenerator jwtGenerator;
+  private final EntityManager entityManager;
+  private final LoginMapper mapper;
+  private final UserService userService;
 
   @Inject
-  public LoginServiceImpl(EntityManager entityManager, LoginMapper mapper, @RestClient UserService userService) {
+  public LoginServiceImpl(
+      EntityManager entityManager,
+      LoginMapper mapper,
+      JwtGenerator jwtGenerator,
+      @RestClient UserService userService) {
     this.entityManager = entityManager;
     this.mapper = mapper;
+    this.jwtGenerator = jwtGenerator;
     this.userService = userService;
   }
 
   private Optional<UserEntity> findByEmail(Login login) {
-    return entityManager.createNamedQuery("findByEmail", UserEntity.class)
-            .setParameter("email", login.email())
-            .getResultList()
-            .stream()
-            .findFirst();
-  }
-
-  String getToken(User user) {
-    return Jwt.claims()
-            .upn(user.getEmail())
-            .claim("username", user.getUsername())
-            .sign();
+    return entityManager
+        .createNamedQuery("findByEmail", UserEntity.class)
+        .setParameter("email", login.email())
+        .getResultList()
+        .stream()
+        .findFirst();
   }
 
   User generateToken(User user) {
     Objects.requireNonNull(user);
-    return user.withToken(getToken(user));
+    return user.withToken(
+        jwtGenerator.generateJwt(Map.of("upn", user.getEmail(), "username", user.getUsername())));
   }
 
   User requestUser(User user) {
@@ -64,9 +65,9 @@ public class LoginServiceImpl implements LoginService {
   @Override
   public Optional<User> login(@NotNull @Valid LoginRequest request) {
     return findByEmail(request.user())
-            .map(mapper::toDomain)
-            .map(this::generateToken)
-            .map(this::requestUser)
-            .map(this::generateToken);
+        .map(mapper::toDomain)
+        .map(this::generateToken)
+        .map(this::requestUser)
+        .map(this::generateToken);
   }
 }

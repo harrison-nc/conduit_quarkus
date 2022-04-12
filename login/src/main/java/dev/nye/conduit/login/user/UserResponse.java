@@ -5,8 +5,8 @@ import javax.json.bind.annotation.JsonbProperty;
 
 public record UserResponse(User user) {
 
-    @JsonbCreator
-    public UserResponse(@JsonbProperty("user") User user) {
-        this.user = user;
-    }
+  @JsonbCreator
+  public UserResponse(@JsonbProperty("user") User user) {
+    this.user = user;
+  }
 }

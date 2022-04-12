@@ -1,7 +1,6 @@
 package dev.nye.conduit.login;
 
 import dev.nye.conduit.login.user.User;
-
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

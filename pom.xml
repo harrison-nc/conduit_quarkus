@@ -11,6 +11,7 @@
         <module>login</module>
         <module>registration</module>
         <module>user</module>
+        <module>common</module>
     </modules>
     <properties>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>

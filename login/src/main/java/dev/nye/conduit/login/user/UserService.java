@@ -1,8 +1,7 @@
 package dev.nye.conduit.login.user;
 
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-
 import javax.ws.rs.*;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Produces("application/json")
 @Consumes("application/json")
@@ -10,6 +9,6 @@ import javax.ws.rs.*;
 @Path("/api/user")
 public interface UserService {
 
-    @GET
-    UserResponse getUser(@HeaderParam("Authorization") String token);
+  @GET
+  UserResponse getUser(@HeaderParam("Authorization") String token);
 }
