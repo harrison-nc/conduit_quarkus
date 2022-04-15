@@ -34,6 +34,8 @@ public class UserResourceTest {
 
   @Inject JwtGenerator jwtGenerator;
 
+  @Inject UserMapper userMapper;
+
   @Inject
   @ConfigProperty(name = "quarkus.hibernate-orm.database.default-schema")
   String databaseSchema;
@@ -68,20 +70,14 @@ public class UserResourceTest {
     }
   }
 
+  private void removeAllRecordsInDatabase() {
+    withTransaction(tx -> entityManager.createQuery("DELETE FROM User").executeUpdate());
+  }
+
   @BeforeEach
   void setup() {
     webClient = ClientBuilder.newClient();
     webTarget = webClient.target(uri);
-  }
-
-  private void removeAllRecordsInDatabase() {
-    withTransaction(
-        tx -> {
-          entityManager.createQuery("DELETE FROM User").executeUpdate();
-          entityManager
-              .createNativeQuery("DELETE FROM " + databaseSchema + ".logins")
-              .executeUpdate();
-        });
   }
 
   @BeforeEach
@@ -99,38 +95,12 @@ public class UserResourceTest {
     webClient.close();
   }
 
-  private Map<String, Object> toMap(User user) {
-    return Map.of("upn", user.getEmail());
-  }
-
   private void persistToDatabase(User user) {
-    withTransaction(
-        tx -> {
-          entityManager
-              .createNativeQuery(
-                  """
-              INSERT INTO conduit.logins (email, password_hash)
-              VALUES (:email, 'test_password')
-              """)
-              .setParameter("email", user.getEmail())
-              .executeUpdate();
-
-          entityManager
-              .createNativeQuery(
-                  """
-              INSERT INTO conduit.users (email, username, bio, image, login_id)
-              VALUES (:email, :username, :bio, :image, (SELECT l.id FROM conduit.logins as l WHERE l.email = :email))
-              """)
-              .setParameter("email", user.getEmail())
-              .setParameter("username", user.getUsername())
-              .setParameter("bio", user.getBio())
-              .setParameter("image", user.getImage())
-              .executeUpdate();
-        });
+    withTransaction(tx -> entityManager.persist(userMapper.toEntity(user)));
   }
 
   private Response get(User user) {
-    String token = jwtGenerator.generateJwt(toMap(user));
+    String token = jwtGenerator.generateJwt(Map.of("upn", user.getEmail()));
     return webTarget
         .request(MediaType.APPLICATION_JSON)
         .header("Authorization", "Bearer " + token)
