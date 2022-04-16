@@ -13,18 +13,18 @@ public class LoggingProvider implements ContainerRequestFilter, ClientRequestFil
 
   private <K, V> void print(String h, MultivaluedMap<K, V> m) {
     System.out.format(
-        "[%s]%n%s",
+        "%n==== %s ====%n%s",
         h,
         m.entrySet().stream()
             .map(
                 e ->
-                    "%s => %s"
+                    "%s => %s%n"
                         .formatted(
                             e.getKey(),
                             e.getValue().stream()
                                 .map(Object::toString)
                                 .collect(Collectors.joining(","))))
-            .collect(Collectors.joining("\n")));
+            .collect(Collectors.joining()));
   }
 
   @Override
