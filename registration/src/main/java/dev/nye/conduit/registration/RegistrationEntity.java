@@ -2,26 +2,34 @@ package dev.nye.conduit.registration;
 
 import java.util.Objects;
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 
 @Table(name = "users")
 @Entity(name = "User")
 public class RegistrationEntity {
 
   private Long id;
+  private String email;
   private String username;
-  private Long loginId;
+  private String password;
+  private String bio;
+  private String image;
 
   public RegistrationEntity() {
     // JPA
   }
 
-  public RegistrationEntity(String username) {
-    this(username, 0L);
+  public RegistrationEntity(String email, String username, String password) {
+    this(email, username, password, "", "");
   }
 
-  public RegistrationEntity(String username, Long loginId) {
+  public RegistrationEntity(
+      String email, String username, String password, String bio, String image) {
+    this.email = email;
     this.username = username;
-    this.loginId = loginId;
+    this.password = password;
+    this.bio = bio;
+    this.image = image;
   }
 
   @SequenceGenerator(
@@ -40,22 +48,52 @@ public class RegistrationEntity {
     this.id = id;
   }
 
-  @Column(name = "login_id")
-  public Long getLoginId() {
-    return loginId;
-  }
-
-  public void setLoginId(Long loginId) {
-    this.loginId = loginId;
-  }
-
-  @Column(name = "username")
+  @Column(name = "username", nullable = false)
+  @NotBlank
   public String getUsername() {
     return username;
   }
 
   public void setUsername(String username) {
     this.username = username;
+  }
+
+  @Column(name = "email", nullable = false)
+  @NotBlank
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  @Column(name = "password_hash", nullable = false)
+  @NotBlank
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  @Column(name = "bio")
+  public String getBio() {
+    return bio;
+  }
+
+  public void setBio(String bio) {
+    this.bio = bio;
+  }
+
+  @Column(name = "image")
+  public String getImage() {
+    return image;
+  }
+
+  public void setImage(String image) {
+    this.image = image;
   }
 
   @Override

@@ -68,11 +68,7 @@ public class RegistrationResourceTest {
   @BeforeEach
   @AfterEach
   void clearDb() {
-    withTransaction(
-        tx -> {
-          entityManager.createQuery("DELETE FROM User").executeUpdate();
-          entityManager.createNativeQuery("DELETE FROM logins").executeUpdate();
-        });
+    withTransaction(tx -> entityManager.createQuery("DELETE FROM User").executeUpdate());
   }
 
   private Response post(JsonObject reg) {
@@ -195,17 +191,10 @@ public class RegistrationResourceTest {
         () ->
             withTransaction(
                 tx -> {
-                  var loginId =
-                      entityManager
-                          .createNativeQuery("SELECT l.id FROM logins l WHERE l.email = :email")
-                          .setParameter("email", email)
-                          .getSingleResult();
-
                   entityManager
                       .createQuery(
-                          "SELECT u FROM User u WHERE u.loginId = :loginId",
-                          RegistrationEntity.class)
-                      .setParameter("loginId", ((Number) loginId).longValue())
+                          "SELECT u FROM User u WHERE u.email = :email", RegistrationEntity.class)
+                      .setParameter("email", email)
                       .getSingleResult();
                 }),
         "user");
