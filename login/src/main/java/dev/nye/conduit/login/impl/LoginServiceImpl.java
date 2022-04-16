@@ -16,6 +16,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.WebApplicationException;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class LoginServiceImpl implements LoginService {
@@ -24,6 +25,8 @@ public class LoginServiceImpl implements LoginService {
   private final EntityManager entityManager;
   private final LoginMapper mapper;
   private final UserService userService;
+
+  private Logger logger;
 
   @Inject
   public LoginServiceImpl(
@@ -35,6 +38,11 @@ public class LoginServiceImpl implements LoginService {
     this.mapper = mapper;
     this.jwtGenerator = jwtGenerator;
     this.userService = userService;
+  }
+
+  @Inject
+  public void setLogger(Logger logger) {
+    this.logger = logger;
   }
 
   private Optional<UserEntity> findByEmail(Login login) {

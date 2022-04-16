@@ -1,8 +1,9 @@
 package dev.nye.conduit.login.user;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public final class User {
+public final class User implements Serializable {
   private String email;
   private String username;
   private String bio;

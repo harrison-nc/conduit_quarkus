@@ -6,6 +6,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -36,11 +38,10 @@ public class LoginResourceTest {
   WebTarget webTarget;
   Client webClient;
 
-  public static List<UserWithLogin> getLogins() {
+  public static List<UserWithPassword> getLogins() {
     return List.of(
-        new UserWithLogin(
-            new User("test@mail.com", "test", "A test user", "test.jpeg"),
-            new Login("test@mail.com", "test_password")));
+        new UserWithPassword(
+            new User("test@mail.com", "test", "A test user", "test.jpeg"), "test_password"));
   }
 
   public static Stream<Arguments> getLoginProperties() {
@@ -70,7 +71,7 @@ public class LoginResourceTest {
     }
   }
 
-  private void createUser(UserWithLogin ul) {
+  private void createUser(UserWithPassword ul) {
     withTransaction(
         tx ->
             entityManager
@@ -83,16 +84,18 @@ public class LoginResourceTest {
                 .setParameter("username", ul.user().getUsername())
                 .setParameter("bio", ul.user().getBio())
                 .setParameter("image", ul.user().getImage())
-                .setParameter("password", ul.login().password())
+                .setParameter("passwordHash", ul.password())
                 .executeUpdate());
   }
 
-  private Response post(Login login) {
-    return webTarget.request("application/json").post(Entity.json(login));
+  private Response post(UserWithPassword up) {
+    var login = Map.of("email", up.user().getEmail(), "password", up.password());
+    var userLogin = Map.of("user", login);
+    return webTarget.request("application/json").post(Entity.json(userLogin));
   }
 
   private void cleanDatabase() {
-    entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
+    withTransaction(tx -> entityManager.createNativeQuery("DELETE FROM users").executeUpdate());
   }
 
   @BeforeEach
@@ -119,9 +122,9 @@ public class LoginResourceTest {
   @DisplayName("Login should return user email")
   @MethodSource("getLogins")
   @ParameterizedTest
-  void login0(UserWithLogin ul) {
-    createUser(ul);
-    Response response = post(ul.login());
+  void login0(UserWithPassword up) {
+    createUser(up);
+    Response response = post(up);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "has entity");
@@ -133,7 +136,7 @@ public class LoginResourceTest {
           Assertions.assertAll(
               () -> {
                 JsonObject user = responseBody.getJsonObject("user");
-                String userEmail = ul.login().email();
+                String userEmail = up.user.getEmail();
 
                 Assertions.assertEquals(userEmail, user.getString("email"), "email");
               });
@@ -143,9 +146,9 @@ public class LoginResourceTest {
   @DisplayName("Login should return user properties")
   @MethodSource("getLoginProperties")
   @ParameterizedTest
-  void login2(String property, UserWithLogin ul) {
-    createUser(ul);
-    Response response = post(ul.login());
+  void login2(String property, UserWithPassword up) {
+    createUser(up);
+    Response response = post(up);
 
     Assertions.assertEquals(200, response.getStatus(), "status");
     Assertions.assertTrue(response.hasEntity(), "has entity");
@@ -161,11 +164,45 @@ public class LoginResourceTest {
   @DisplayName("Login should return 401 if user doest not exists")
   @MethodSource("getLogins")
   @ParameterizedTest
-  void login_reject(UserWithLogin ul) {
-    var response = post(ul.login());
+  void login_reject(UserWithPassword up) {
+    var response = post(up);
 
     Assertions.assertEquals(401, response.getStatus(), "status");
   }
 
-  private record UserWithLogin(User user, Login login) {}
+  private static final class UserWithPassword {
+    private final User user;
+    private final String password;
+
+    UserWithPassword(User user, String password) {
+      this.user = user;
+      this.password = password;
+    }
+
+    public User user() {
+      return user;
+    }
+
+    public String password() {
+      return password;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) return true;
+      return obj instanceof UserWithPassword that
+          && Objects.equals(this.user, that.user)
+          && Objects.equals(this.password, that.password);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(user, password);
+    }
+
+    @Override
+    public String toString() {
+      return "UserWithLogin[" + "user=" + user + ", " + "password=" + password + ']';
+    }
+  }
 }

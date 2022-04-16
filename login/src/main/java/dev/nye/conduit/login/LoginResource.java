@@ -1,6 +1,6 @@
 package dev.nye.conduit.login;
 
-import dev.nye.conduit.login.user.User;
+import dev.nye.conduit.login.user.UserResponse;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -13,7 +13,10 @@ public class LoginResource {
   @Inject LoginService service;
 
   @POST
-  public User login(LoginRequest body) {
-    return service.login(body).orElseThrow(() -> new WebApplicationException(401));
+  public UserResponse login(LoginRequest body) {
+    return service
+        .login(body)
+        .map(UserResponse::new)
+        .orElseThrow(() -> new WebApplicationException(401));
   }
 }
