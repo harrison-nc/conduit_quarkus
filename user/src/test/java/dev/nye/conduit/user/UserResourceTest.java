@@ -12,12 +12,9 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.persistence.EntityManager;
 import javax.transaction.*;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +30,6 @@ public class UserResourceTest {
   @Inject UserTransaction userTransaction;
 
   @Inject JwtGenerator jwtGenerator;
-
-  @Inject UserMapper userMapper;
-
-  @Inject
-  @ConfigProperty(name = "quarkus.hibernate-orm.database.default-schema")
-  String databaseSchema;
 
   @TestHTTPEndpoint(UserResource.class)
   @TestHTTPResource
@@ -95,16 +86,36 @@ public class UserResourceTest {
     webClient.close();
   }
 
+  private UserEntity toEntity(User user) {
+    var entity = new UserEntity();
+    entity.setUsername(user.username);
+    entity.setImage(user.image);
+    entity.setBio(user.bio);
+    entity.setEmail(user.email);
+    return entity;
+  }
+
   private void persistToDatabase(User user) {
-    withTransaction(tx -> entityManager.persist(userMapper.toEntity(user)));
+    withTransaction(tx -> entityManager.persist(toEntity(user)));
+  }
+
+  private String createAuthenticationToken(User user) {
+    return "Bearer " + jwtGenerator.generateJwt(Map.of("upn", user.email));
+  }
+
+  private Invocation.Builder request(String token) {
+    return webTarget
+      .request(MediaType.APPLICATION_JSON)
+      .header("Authorization", token);
   }
 
   private Response get(User user) {
-    String token = jwtGenerator.generateJwt(Map.of("upn", user.getEmail()));
-    return webTarget
-        .request(MediaType.APPLICATION_JSON)
-        .header("Authorization", "Bearer " + token)
-        .get();
+    return request(createAuthenticationToken(user)).get();
+  }
+
+  private Response put(User user) {
+    var bodyParam = Map.of("user", user);
+    return request(createAuthenticationToken(user)).put(Entity.json(bodyParam));
   }
 
   @DisplayName("getUser should return 401 if user does not provide an authorization token")
@@ -135,10 +146,10 @@ public class UserResourceTest {
     String bio = userJson.getString("bio");
     String image = userJson.getString("image");
 
-    Assertions.assertEquals(user.getEmail(), email, "email");
-    Assertions.assertEquals(user.getUsername(), username, "username");
-    Assertions.assertEquals(user.getBio(), bio, "bio");
-    Assertions.assertEquals(user.getImage(), image, "image");
+    Assertions.assertEquals(user.email, email, "email");
+    Assertions.assertEquals(user.username, username, "username");
+    Assertions.assertEquals(user.bio, bio, "bio");
+    Assertions.assertEquals(user.image, image, "image");
   }
 
   @DisplayName("getUser should return user Json")
@@ -161,5 +172,29 @@ public class UserResourceTest {
     Response response = get(user);
 
     Assertions.assertEquals(404, response.getStatus(), "status");
+  }
+
+  @DisplayName("updateUser should return 200 status code when update is successful")
+  @MethodSource("users")
+  @ParameterizedTest
+  void updateUser3(User user) {
+    persistToDatabase(user);
+    Response response = put(user);
+
+    Assertions.assertEquals(200, response.getStatus(), "status");
+  }
+
+  public final static class User {
+    public final String email;
+    public final String username;
+    public final String bio;
+    public final String image;
+
+    public User(String email, String username, String bio, String image) {
+      this.email = email;
+      this.username = username;
+      this.bio = bio;
+      this.image = image;
+    }
   }
 }

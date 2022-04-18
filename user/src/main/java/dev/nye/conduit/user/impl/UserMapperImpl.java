@@ -12,7 +12,7 @@ public class UserMapperImpl implements UserMapper {
   @Override
   public UserEntity toEntity(User user) {
     Objects.requireNonNull(user);
-    return new UserEntity(user.getEmail(), user.getUsername(), user.getBio(), user.getImage());
+    return new UserEntity(user.email(), user.username(), user.bio(), user.image());
   }
 
   @Override
